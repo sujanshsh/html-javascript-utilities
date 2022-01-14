@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Are they same?</title>
+</head>
+<body>
+    <table>
+        <tbody>
+            <tr>
+                <th>Data A (SQL Tools)</th>
+                <th></th>
+            </tr>
+            <tr>
+                <td><textarea rows="10" cols="80" id="data-a"></textarea></td>
+                <td>
+                    <button id="compare-button" onclick="compareData()">Compare</button>
+                    <fieldset>
+                        <legend>Result</legend>
+                        <div id="result-div" style="width:600px; overflow-x: auto; white-space: pre; height: 100px;"></div>
+                    </fieldset>
+                </td>
+            </tr>
+            <tr>
+                <th>Data B (Mantis Description)</th>
+                <th></th>
+            </tr>
+            <tr>
+                <td><textarea rows="10" cols="80" id="data-b"></textarea></td>
+                <td>
+                    <button id="format-button" onclick="formatData()">Format</button>
+                    <label for="max-length">Max length: </label>
+                    <input type="number" id="max-length" min="10" max="200" step="5" value="120"/><br/>
+                    <label for="formatted-output">Output:</label><button id="copy-button" onclick="copyOutput()">Copy</button><br/>
+                    <textarea rows="5" cols="80" id="formatted-output" style="white-space: pre;"></textarea>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <script type="text/javascript">
+    
+    function compareData() {
+        const dataA = document.getElementById('data-a').value.trim();
+        const dataB = document.getElementById('data-b').value.trim();
+        if (dataA === '' || dataB === '') {
+            setResult('Empty data.');
+            return;
+        }
+        const refinedDataA = refine(dataA);
+        const refinedDataB = refine(dataB);
+        const readyDataA = refinedDataA.sort();
+        const readyDataB = refinedDataB.sort();
+        let mismatch = false;
+        if (readyDataA.length === readyDataB.length) {
+            for(let i = 0; i < readyDataA.length; i++) {
+                if (readyDataA[i] != readyDataB[i]) {
+                    mismatch = true;
+                    setResult('Does not match! (Value mismatch.)');
+                    break;
+                }
+            }
+            if (!mismatch) {
+                setResult('Match.');
+            }            
+        } else {
+            setResult('Does not match! (Count mismatch.)')
+        }        
+    }
+
+    function refine(data) {
+        let refinedData;
+        let step1, step2, step3;
+        step1 = data.replaceAll("\n",',').split(',');
+        step2 = step1.filter(v => v.trim());
+        step3 = step2.map(v => v.trim().replace(/^'|'$/g,''));
+        return step3;
+    }
+
+    function formatData() {
+        const dataB = document.getElementById('data-b').value.trim();
+        const maxLength = parseInt(document.getElementById('max-length').value);
+        const refinedDataB = refine(dataB);
+        let output = '';
+        let lineLength = 0;
+        refinedDataB.forEach((v) => {
+            output += `'${v}',`;
+            lineLength += `'${v}',`.length;
+            if (lineLength > maxLength) {
+                output += "\n";
+                lineLength = 0;
+            }
+        });
+        output = output.replace(/,$/,'');
+        setOutput(output);
+    }
+
+    function setResult(message) {
+        document.getElementById('result-div').innerHTML = message;
+    }
+
+    function setOutput(content) {
+        document.getElementById('formatted-output').innerHTML = content;
+    }
+    
+    function copyOutput() {
+        document.getElementById('formatted-output').select();
+        document.execCommand('copy');
+    }
+    
+    </script>
+</body>
+</html>
