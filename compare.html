@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="moment.min.js"></script>
+    <title>Compare Data</title>
+</head>
+<body>
+    <table>
+        <tbody>
+            <tr>
+                <th>Data A (for SQL Tools)</th>
+                <th style="text-align: left;">Skip Columns</th>
+                <th style="text-align: left;">Date Columns</th>
+                <th style="text-align: left;">Number Columns</th>
+            </tr>
+            <tr>
+                <td><textarea rows="10" cols="80" id="data-a"></textarea></td>
+                <td><textarea rows="10" cols="25" id="skip-columns"></textarea></td>
+                <td><textarea rows="10" cols="25" id="date-columns"></textarea></td>
+                <td><textarea rows="10" cols="25" id="number-columns"></textarea></td>
+            </tr>
+            <tr>
+                <th></th>
+                <th>Date Format A:</th>
+                <th colspan="2" style="text-align: left;"><input type="text" id="date-format-a" size="20" value="MM/DD/YYYY HH:mm:ss" /></th>
+            </tr>
+            <tr>
+                <th>Data B (for Excel)</th>
+                <th>Date Format B:</th>
+                <th colspan="2" style="text-align: left;"><input type="text" id="date-format-b" size="20" value="MM/DD/YYYY" /></th>
+            </tr>
+            <tr>
+                <td><textarea rows="10" cols="80" id="data-b"></textarea></td>
+                <td colspan="3">
+                    <button id="compare-button" onclick="compareData()">Compare</button>
+                    <fieldset>
+                        <legend>Result</legend>
+                        <div id="result-div" style="width:600px; overflow-x: auto; white-space: pre;"></div>
+                    </fieldset>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <script type="text/javascript">
+    
+    function compareData() {
+        const skip_columns = getSkipColumns()
+        const date_columns = getDateColumns()
+        const number_columns = getNumberColumns()
+        const date_format_a = document.getElementById('date-format-a').value;
+        const date_format_b = document.getElementById('date-format-b').value;
+        const columns_a = getDataColumns('a')
+        const columns_b = getDataColumns('b')
+
+        const columns_result = columnsMatch(columns_a, columns_b)
+        if (columns_result !== true) {
+            setResult(columns_result)
+            return
+        }
+        const data_result = checkDataMatch(columns_a, columns_b, date_columns, date_format_a, date_format_b, skip_columns, number_columns)
+        if (data_result !== true) {
+            setResult(data_result)
+            return
+        }
+        setResult('Match.')
+    }
+
+    function getSkipColumns() {
+        return getColumnsList('skip-columns')
+    }
+
+    function getDateColumns() {
+        return getColumnsList('date-columns')
+    }
+
+    function getNumberColumns() {
+        return getColumnsList('number-columns')
+    }
+
+    function getColumnsList(id) {
+        const data = document.getElementById(id).value.split("\n")
+        return data.filter((v) => !!(v.trim()))
+    }
+
+    function getDataColumns(id_suffix) {
+        const data = document.getElementById('data-' + id_suffix).value.split("\n")
+        if (data.length > 0)  {
+            return data[0].split("\t").map((v) => (v.toLowerCase()))
+        }
+        return [];
+    }
+
+    function columnsMatch(columns_a, columns_b) {
+        if (columns_a.length != columns_b.length) {
+            return 'Columns count does not match!'
+        }
+
+        let not_found = false
+        columns_a.forEach((v) => {
+            if (!columns_b.includes(v)) {
+                not_found = true
+            }
+        })
+        if (not_found) {
+            return 'All columns of Data A were not found in B'
+        }
+
+        not_found = false
+        columns_a.forEach((v) => {
+            if (!columns_b.includes(v)) {
+                not_found = true
+            }
+        })
+        if (not_found) {
+            return 'All columns of Data B were not found in A';
+        }
+        return true;
+    }
+
+    function setResult(message) {
+        document.getElementById('result-div').innerHTML = message;
+    }
+
+    function checkDataMatch(columns_a, columns_b, date_columns, date_format_a, date_format_b, skip_columns, number_columns) {
+        let match = ''
+        columns_a.forEach((v, i) => {
+            if (skip_columns.includes(v)) {
+                return
+            }
+            let data_a = getColumnWiseData('a', v, i, date_columns, date_format_a, number_columns)
+            let data_b = getColumnWiseData('b', v, columns_b.indexOf(v), date_columns, date_format_b, number_columns)
+
+            if (data_a != data_b) {
+                match += `Data Mismatch on Column <b>${v}</b>
+    A:"${data_a}"
+    B:"${data_b}"
+`
+            }
+        })
+        return (match === '' ? true : match);
+    }
+
+    function getColumnWiseData(id_suffix, column, column_index, date_columns, date_format, number_columns) {
+        const data = document.getElementById('data-' + id_suffix).value.split("\n")
+        let column_data = ""
+        let temp = ""
+        // For each line:
+        data.forEach((v, i) => {
+            temp = v.split("\t")[column_index]
+            if (typeof temp === "undefined") {
+                return
+            }
+
+            if (i != 0 && temp.trim() != "" && date_columns.includes(column)) {
+                temp = moment(temp, date_format).format('MM/DD/YYYY HH:mm:ss')
+            } else if (i != 0 && temp.trim() != "" && number_columns.includes(column)) {
+                temp = parseFloat(temp).toString()
+            }
+
+            if (i == 0) {
+                temp = temp.toLowerCase() // Use lowercase for 1st row i.e. columns row.
+            }
+
+            column_data += temp            
+        })
+        return column_data
+    }
+    </script>
+</body>
+</html>
