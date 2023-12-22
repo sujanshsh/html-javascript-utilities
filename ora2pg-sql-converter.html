@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oracle to PostgreSQL SQL converter tool</title>
+</head>
+<body>
+    <table>
+        <tbody>
+            <tr>
+                <th>Oracle SQL <button id="format-button" onclick="convertSQL()">Convert to PGSQL</button></th>
+                <th>PostgreSQL <button id="copy-button" onclick="copyOutput()">Copy</button></th>
+            </tr>
+            <tr>
+                <td>
+                    <textarea rows="50" cols="120" id="sql-oracle"></textarea>
+                </td>
+                <td>
+                    <textarea rows="50" cols="120" id="sql-pgsql"></textarea>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <script type="text/javascript">
+    
+    function convertSQL() {
+        const oracleSql = document.getElementById('sql-oracle').value.trim()
+        
+        convertedSQL = convertNVL(oracleSql)
+        convertedSQL = convertOracleTableList(convertedSQL)
+        convertedSQL = convertTRUNC(convertedSQL)
+        convertedSQL = convertSYSDATE(convertedSQL)
+
+        setResult(convertedSQL)
+    }
+
+
+    function setResult(message) {
+        document.getElementById('sql-pgsql').value = message
+    }
+
+   
+    function copyOutput() {
+        document.getElementById('sql-pgsql').select()
+        document.execCommand('copy')
+    }
+
+    function convertNVL(oracleSql) {
+        return oracleSql.replaceAll(/NVL/gi, 'COALESCE')
+    }
+
+    function convertOracleTableList(oracleSql) {
+        return oracleSql
+    }
+
+    function convertTRUNC(oracleSql) {
+        return oracleSql.replaceAll(/TRUNC\(\s*([\w_\d]+)\s*\)/gi,"DATE_TRUNC('day', $1)")
+    }
+
+    function convertSYSDATE(oracleSql) {
+        return oracleSql.replaceAll(/SYSDATE/gi, 'CURRENTTIME')
+    }
+   
+    </script>
+</body>
+</html>
